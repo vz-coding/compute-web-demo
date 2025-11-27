@@ -20,6 +20,11 @@ export default function ChatTab({
   const [loading, setLoading] = useState(false);
   const [verifyingMessageId, setVerifyingMessageId] = useState<string | null>(null);
 
+  const priceApiUrl = "https://fapi.binance.com/fapi/v1/ticker/price?symbol=0GUSDT";
+  const [symbol, setSymbol] = useState("");
+  const [price, setPrice] = useState("");
+  const [time, setTime] = useState("");
+
   // 重置消息历史
   useEffect(() => {
     if (selectedProvider) {
@@ -139,6 +144,22 @@ export default function ChatTab({
     );
   }
 
+  // 获取价格
+  const fetchTokenPrice = async () => {
+    try {
+      const result = await fetch(priceApiUrl);
+      const data = await result.json();
+      setSymbol(data.symbol || "");
+      setPrice(data.price || "");
+      setTime(data.time || "");
+
+      setInputMessage("当前" + symbol + "价格: " + price + ", 请给出交易建议");
+    } catch (err) {
+      setMessage("获取价格失败")
+      console.error(err);
+    }
+  };
+
   return (
     <div>
       <h2>AI 聊天</h2>
@@ -179,6 +200,17 @@ export default function ChatTab({
             </div>
           ))
         )}
+      </div>
+
+      <div className="flex items-center mb-3">
+        <button onClick={fetchTokenPrice} style={{ padding: "5px 10px" }}>
+          获取当前价格
+        </button>
+      </div>
+
+      <div className="flex space-x-4 text-s items-center">
+        <p>当前 {symbol} 价格: {price}</p>
+        <p>更新时间: {time}</p>
       </div>
 
       <div style={{ display: "flex" }}>
