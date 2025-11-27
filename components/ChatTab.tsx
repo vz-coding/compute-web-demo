@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatTabProps {
   broker: any;
@@ -20,7 +21,7 @@ export default function ChatTab({
   const [loading, setLoading] = useState(false);
   const [verifyingMessageId, setVerifyingMessageId] = useState<string | null>(null);
 
-  const priceApiUrl = "https://fapi.binance.com/fapi/v1/ticker/price?symbol=0GUSDT";
+  const priceApiUrl = "https://fapi.binance.com/fapi/v1/ticker/price?symbol=";
   const [symbol, setSymbol] = useState("");
   const [price, setPrice] = useState("");
   const [time, setTime] = useState("");
@@ -147,13 +148,24 @@ export default function ChatTab({
   // 获取价格
   const fetchTokenPrice = async () => {
     try {
-      const result = await fetch(priceApiUrl);
+      const result = await fetch(priceApiUrl + symbol.toUpperCase() + "USDT");
       const data = await result.json();
-      setSymbol(data.symbol || "");
+
+      // 如果未能正常获取价格，比如输入错误 symbol。
+      if (!data.price) {
+        setPrice("");
+        setTime("");
+        setInputMessage("");
+        setMessage("获取价格失败 " + data.msg || "");
+
+        return;
+      }
+
+      // 如果成功获取价格。
       setPrice(data.price || "");
       setTime(data.time || "");
-
-      setInputMessage("当前" + symbol + "价格: " + price + ", 请给出交易建议");
+      setInputMessage("当前" + symbol + "价格: " + data.price + " U, 请给出交易建议");
+      setMessage("获取价格成功")
     } catch (err) {
       setMessage("获取价格失败")
       console.error(err);
@@ -183,7 +195,8 @@ export default function ChatTab({
         ) : (
           messages.map((msg, i) => (
             <div key={i} style={{ marginBottom: "10px" }}>
-              <strong>{msg.role === "user" ? "你" : "AI"}:</strong> {msg.content}
+              <strong>{msg.role === "user" ? "你" : "AI"}:</strong>
+              <ReactMarkdown>{msg.content}</ReactMarkdown>
               {msg.role === "assistant" && msg.id && (
                 <span style={{ 
                   marginLeft: "10px", 
@@ -202,15 +215,22 @@ export default function ChatTab({
         )}
       </div>
 
-      <div className="flex items-center mb-3">
+      <div style={{ display: "flex" }}>
+        <input
+          type="text"
+          value={symbol}
+          onChange={(e) => setSymbol(e.target.value)}
+          placeholder="输入 symbol（如 0G）"
+          style={{ padding: "5px", marginRight: "10px" }}
+        />
         <button onClick={fetchTokenPrice} style={{ padding: "5px 10px" }}>
           获取当前价格
         </button>
       </div>
 
-      <div className="flex space-x-4 text-s items-center">
+      <div style={{ display: "flex", alignItems: "center" }}>
         <p>当前 {symbol} 价格: {price}</p>
-        <p>更新时间: {time}</p>
+        <p style={{ marginLeft: "10px" }}>更新时间: {time ? new Date(parseInt(time)).toLocaleString() : ''}</p>
       </div>
 
       <div style={{ display: "flex" }}>
